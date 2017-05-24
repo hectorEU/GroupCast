@@ -13,7 +13,7 @@ class GMS(object):
         self.peers = {}  # Key: Peer proxy, Value: Connection attempts
         self.fail_detect = 10
         self.fail_timeout = 2
-        self.max_attempts = 5
+        self.max_attempts = 1
 
     # Public actor methods *************************
     def join(self, peer):
@@ -49,7 +49,7 @@ class GMS(object):
 if __name__ == "__main__":
     set_context()
 
-    h = create_host("http://192.168.1.114:6969")
+    h = create_host("http://10.21.6.8:6969")
     tracker = h.spawn("tracker1", "GMS/GMS")
     tracker.run()
     print "Tracker ready"
