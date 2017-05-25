@@ -49,7 +49,7 @@ class GMS(object):
 if __name__ == "__main__":
     set_context()
 
-    h = create_host("http://10.21.6.8:6969")
+    h = create_host("http://192.168.43.123:6969")
     tracker = h.spawn("tracker1", "GMS/GMS")
     tracker.run()
     print "Tracker ready"
