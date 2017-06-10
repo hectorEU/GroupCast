@@ -28,6 +28,5 @@ class PeerTest(unittest.TestCase):
         peer.request()
         self.assertEqual(peer.getleader_seq(), 8)
 
-
 if __name__ == '__main__':
     unittest.main()
