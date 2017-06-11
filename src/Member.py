@@ -1,11 +1,10 @@
 from random import sample, choice
 from string import lowercase
 
-from pyactor.context import set_context, serve_forever, create_host, sleep
-from pyactor.exceptions import TimeoutError
-
 from GMS import GMS
 from output import _print, _error
+from pyactor.context import set_context, serve_forever, create_host, sleep
+from pyactor.exceptions import TimeoutError
 
 
 class Peer(object):
