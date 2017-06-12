@@ -7,7 +7,7 @@ from pyactor.context import set_context, create_host, sleep
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         set_context()
-        h = create_host("http://192.168.1.112:7969")
+        h = create_host("http://localhost:7969")
         peer = h.spawn("1", "src.Member/Member")
         terminal = sys.stdout
         sys.stdout = open("test.txt", "w")
