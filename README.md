@@ -1,2 +1,1 @@
-# GroupCast
-SD
+[![Build Status](https://travis-ci.org/pedrotgn/pyactor.svg?branch=master)](https://travis-ci.org/hectorEU/GroupCast)

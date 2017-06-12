@@ -1,68 +1,80 @@
 from os.path import basename
 from threading import Timer
 
+from output import _print
 from pyactor.context import set_context, serve_forever, create_host, later
 from pyactor.exceptions import TimeoutError
-
-from output import _print
 
 
 class GMS(object):
     _tell = ["election_unlock", "run", "failfix", "deadlock_fix"]
     _ask = ["join", "get_members", "election_lock", "get_lock"]
-    _ref = ["election_unlock", "run", "join", "get_members", "election_lock", "failfix", "get_lock", "deadlock_fix"]
+    _ref = ["election_unlock", "run", "join", "get_members", "election_lock", "get_lock", "failfix", "deadlock_fix"]
 
     def __init__(self):
-        self.members = {}  # id : proxy
-        self.waiting_join = set()
-        self.fail_detect = 120
-        self.fail_timeout = 60
-        self.election = False
-        self.checking = False
-        self.deadlock_timeout = 30
+        self.members = {}  # Key -> Member ID : Value -> Member proxy object. Dictionary=Unique ID per member
+        self.waiting_join = set()  # Members waiting to join because an ongoing election. Set=Unique ID per member
+        self.election = False  # Election lock
+        self.fail_detect = 120  # Max. seconds to check all members connectivity
+        self.fail_timeout = 60  # Max. seconds to check if a single member is up
+        self.deadlock_detect = 30  # Lock agent inspector
 
-    # Public actor methods *******************************
+    # Public actor methods *********************************************************************************************
 
+    # Join the group
     def join(self, member):
         if not self.election:
             self.members[int(basename(member.get_url()))] = member
+            # Basename is used to extract ID from http://host_IP/ID_number -> ID_number
+
             _print(self, "Connected: " + member.get_url())
         else:
-            self.waiting_join.add(member)
+            self.waiting_join.add(member)  # Queue member to waiting list for joining the group
 
+    # Leave the group
     def leave(self, member):
-        self.members.pop(int(member.get_id()))
-        _print(self, "Disconnected: " + member.get_url())
+        id = int(member.get_id())
+        if id in self.members:
+            self.members.pop(id)
+            _print(self, "Disconnected: " + member.get_url())
 
+    # Get members from the group
     def get_members(self, member):
-        members = list(self.members.values())
+        members = list(self.members.values())  # members = all proxys from the group in GMS
         try:
-            members.remove(member)  # If member not in members, return False
-            return members
+            members.remove(member)
+            return members  # Returning list of all members in GMS but the calling member
         except ValueError:
-            return False
+            return False  # If member not in GMS (it didn't join), return False
 
     def election_lock(self):
         if not self.election:
             self.election = True
             self.timer = Timer(self.deadlock_detect, self.election_unlock)
             self.timer.start()
+            # If no member calls election_unlock within self.deadlock_detect seconds, self.election lock will be
+            # by the GMS
+
             _print(self, "Election started")
-            return True
+            return True  # Lock acquired, return True
         else:
-            return False
+            return False  # There's already an election running, return False
 
     def election_unlock(self):
-        self.timer.cancel()
+        self.timer.cancel()  # Election success, cancel timer to call this method forcefully
         self.election = False
         for new_member in self.waiting_join:
             self.waiting_join.pop().join(self.proxy)
+            # Election finished, call new members to join the GMS. Let them know which is the GMS by passing the
+            # this GMS proxy (self.proxy)
+
         _print(self, "Election finished")
 
+    # Query lock status
     def get_lock(self):
         return self.election
 
-    # Internal methods ***************************************************************
+    # Internal methods *************************************************************************************************
 
     # Removes inactive members from the group
     def failfix(self):
@@ -73,14 +85,13 @@ class GMS(object):
             except TimeoutError:
                 self.members.pop(member[0])
                 _print(self, "Removed: " + member[1].get_url())
-        self.loop = later(self.host, self.fail_detect, self.proxy, "failfix")
+        self.loop = later(self.host, self.fail_detect, self.proxy, "failfix")  # Recursive timer, working as "interval"
 
-
-    # Activates tracker
+    # Activates timer mode "later" not "interval", in order to avoid overlapping calls and collapse the GMS
     def run(self):
         self.loop = later(self.fail_detect, self.proxy, "failfix")
 
-        # ********************************************************************************
+        # ******************************************************************************************************************
 
 if __name__ == "__main__":
     set_context()
