@@ -4,7 +4,6 @@ from string import lowercase
 from Member import Member
 from output import _print, _error
 from pyactor.context import set_context, serve_forever, create_host, sleep
-from pyactor.exceptions import TimeoutError
 
 
 class Lamport(Member):  # Extends from Member, inherits all functions, variables...
@@ -25,26 +24,12 @@ class Lamport(Member):  # Extends from Member, inherits all functions, variables
         except AttributeError:
             _error(self, "does not belong to any GMS")
             return
-        try:
-            if not members or self.gms.get_lock():
-                raise ValueError
 
-            seq = self.request()  # There is no sequencer in Lamport
+        seq = self.request()  # There is no sequencer in Lamport
 
-            for peer in members:
-                peer.receive(seq, msg)
-            self.process_msg([self.leader_seq, msg])
-
-        except ValueError:
-            self.waiting_msg.append(msg)
-            _error(self, "Election in progress, queuing msg " + msg)
-
-        except (TimeoutError, AttributeError) as e:
-            self.waiting_msg.append(msg)
-            _error(self, "Leader not working, queuing msg " + msg)
-            if self.gms.election_lock():
-                _error(self, "Starting election")
-                self.election(members)
+        for peer in members:
+            peer.receive(seq, msg)
+        self.process_msg([self.leader_seq, msg])
 
     def receive(self, seq, msg):
         current_seq = self.request()
