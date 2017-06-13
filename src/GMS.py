@@ -15,8 +15,8 @@ class GMS(object):
         self.members = {}  # Key -> Member ID : Value -> Member proxy object. Dictionary=Unique ID per member
         self.waiting_join = set()  # Members waiting to join because an ongoing election. Set=Unique ID per member
         self.election = False  # Election lock
-        self.fail_detect = 120  # Max. seconds to check all members connectivity
-        self.fail_timeout = 60  # Max. seconds to check if a single member is up
+        self.fail_detect = 5  # Max. seconds to check all members connectivity
+        self.fail_timeout = 2  # Max. seconds to check if a single member is up
         self.deadlock_detect = 30  # Lock agent inspector
 
     # Public actor methods *********************************************************************************************
@@ -85,7 +85,7 @@ class GMS(object):
             except TimeoutError:
                 self.members.pop(member[0])
                 _print(self, "Removed: " + member[1].get_url())
-        self.loop = later(self.host, self.fail_detect, self.proxy, "failfix")  # Recursive timer, working as "interval"
+        self.loop = later(self.fail_detect, self.proxy, "failfix")  # Recursive timer, working as "interval"
 
     # Activates timer mode "later" not "interval", in order to avoid overlapping calls and collapse the GMS
     def run(self):
